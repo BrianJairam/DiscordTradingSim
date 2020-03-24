@@ -24,20 +24,20 @@ async def on_ready():
     ''')
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS ledger(
-            transaction_id int IDENTITY,
+            transaction_id INTEGER PRIMARY KEY,
+            transaction_type TEXT,
             guild_id TEXT,
             giver_id TEXT,
             receiver_id TEXT,
             dollars REAL,
             giver_balance REAL,
             receiver_balance REAL,
-            DATE TEXT,
-            PRIMARY KEY (transaction_id)
+            date TEXT
         )
     ''')
     print("DiscordTradingSim is ready.")
 
-# General Commands #
+# General Commands 
 
 # $version
 
@@ -82,7 +82,7 @@ async def info_error(ctx, error):
     elif isinstance(error, commands.MissingRequiredArgument):
         await ctx.send('Gimme a user and I can tell you if they are CliffRouge or not.')
 
-# Money Commands #
+# Economy Commands 
 
 # $balance
 
@@ -97,11 +97,27 @@ async def balance(ctx):
 @client.command()
 async def give(ctx, member: discord.Member, amount: float):
     if (ctx.message.author.guild_permissions.administrator):
+        ef.ledger_update("Test", ctx.guild.id, "\"Admin\"", member.id, amount)
         amount = round(amount, 2)
         ef.money_transfer(member.id, amount)
         await ctx.send(f'Gave {"{:.2f}".format(round(amount, 2))} dollars to {member.name}.')
     else:
         await ctx.send(f'You must be an admin to do that.')
+
+# $pay
+
+@client.command()
+async def pay(ctx, member: discord.Member, amount: float):
+    amount = round(amount, 2)
+    gbalance = ef.check_balance(ctx.message.author.id)
+    if (gbalance - amount < 0):
+        await ctx.send(f'You do not have enough money!')
+    else:
+        ef.ledger_update("User_Transfer", ctx.guild.id, ctx.message.author.id, member.id, amount)
+        ef.money_transfer(member.id, amount)
+        ef.money_transfer(ctx.message.author.id, -amount)
+        await ctx.send(f'{ctx.message.author.name} paid {member.name} {"{:.2f}".format(round(amount, 2))} dollars.')
+
     
 
         

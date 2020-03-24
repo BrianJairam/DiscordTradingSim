@@ -1,9 +1,10 @@
 import sqlite3
+import datetime
 
 def check_balance(member_id):
     db = sqlite3.connect('main.sqlite')
     cursor = db.cursor()
-    cursor.execute(f"SELECT dollars FROM money WHERE user_id = {member_id}")
+    cursor.execute('SELECT dollars FROM money WHERE user_id = ?', (member_id,))
     result = cursor.fetchone()
     if result is None:
         sql = ("INSERT INTO money (user_id, dollars) VALUES(?, ?)")
@@ -20,7 +21,7 @@ def check_balance(member_id):
 def money_transfer(member_id, amount): 
     db = sqlite3.connect('main.sqlite')
     cursor = db.cursor()
-    cursor.execute(f"SELECT dollars FROM money WHERE user_id = {member_id}")
+    cursor.execute('SELECT dollars FROM money WHERE user_id = ?', (member_id,))
     result = cursor.fetchone()
     if result is None:
         sql = ("INSERT INTO money (user_id, dollars) VALUES(?, ?)")
@@ -33,3 +34,23 @@ def money_transfer(member_id, amount):
     db.commit()
     cursor.close()
     db.close()
+
+def ledger_update(transaction_type, guild_id, giver_id, receiver_id, payment):
+    db = sqlite3.connect('main.sqlite')
+    gbalance = check_balance(giver_id)
+    rbalance = check_balance(receiver_id)
+    gbalance -= payment
+    rbalance += payment
+    db = sqlite3.connect('main.sqlite')
+    cursor = db.cursor()
+    ledger_sql = ("INSERT INTO ledger (transaction_type, guild_id, giver_id, receiver_id, dollars, giver_balance, receiver_balance, date) VALUES (?, ?, ?, ?, ?, ?, ?, datetime(\'now\'))")
+    ledger_val = (transaction_type, guild_id, giver_id, receiver_id, payment, gbalance, rbalance)
+    cursor.execute(ledger_sql, ledger_val)
+    db.commit()
+    cursor.close()
+    db.close()
+
+
+
+
+
