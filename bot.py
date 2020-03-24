@@ -56,6 +56,7 @@ async def dice(ctx, choice):
     else:
         result = random.choice(faces)
         if (choice == result):
+            ef.ledger_update("Gambling", ctx.guild.id, "\"Casino\"", ctx.message.author.id, 0.01)
             ef.money_transfer(ctx.message.author.id, 0.01)
             await ctx.send(f'Rolled a {result}. You win $0.01!')
         else:
@@ -110,13 +111,22 @@ async def give(ctx, member: discord.Member, amount: float):
 async def pay(ctx, member: discord.Member, amount: float):
     amount = round(amount, 2)
     gbalance = ef.check_balance(ctx.message.author.id)
-    if (gbalance - amount < 0):
+    if (amount <= 0): 
+        await ctx.send(f'Please enter a positive amount!')
+    elif (ctx.message.author.id == member.id):
+        await ctx.send(f'You can\'t pay yourself!')
+    elif (gbalance - amount < 0):
         await ctx.send(f'You do not have enough money!')
     else:
         ef.ledger_update("User_Transfer", ctx.guild.id, ctx.message.author.id, member.id, amount)
         ef.money_transfer(member.id, amount)
         ef.money_transfer(ctx.message.author.id, -amount)
         await ctx.send(f'{ctx.message.author.name} paid {member.name} {"{:.2f}".format(round(amount, 2))} dollars.')
+
+
+
+
+
 
     
 
