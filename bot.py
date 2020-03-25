@@ -3,6 +3,7 @@ import os
 import sqlite3
 import random
 import economy_functions as ef
+import bank
 from discord.ext import commands
 from dotenv import load_dotenv
 
@@ -35,6 +36,18 @@ async def on_ready():
             date TEXT
         )
     ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS bank_deposits(
+            user_id INTEGER PRIMARY KEY,
+            dollars REAL
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS bank_loans(
+            user_id INTEGER PRIMARY KEY,
+            dollars REAL
+        )
+    ''')
     print("DiscordTradingSim is ready.")
 
 # General Commands 
@@ -58,9 +71,34 @@ async def dice(ctx, choice):
         if (choice == result):
             ef.ledger_update("Gambling", ctx.guild.id, "\"Casino\"", ctx.message.author.id, 0.01)
             ef.money_transfer(ctx.message.author.id, 0.01)
+            ef.money_transfer("\"Casino\"", -0.01)
             await ctx.send(f'Rolled a {result}. You win $0.01!')
         else:
             await ctx.send(f'Rolled a {result}. You lose!')
+
+@client.command()
+async def wagered_dice(ctx, choice, bet: float):
+    faces = [1, 2, 3, 4, 5, 6]
+    choice = int(choice)
+    if (choice not in faces):
+        await ctx.send('Please enter number from 1-6!')
+    elif (bet <= 0):
+        await ctx.send('Please enter a positive bet!')
+    elif (ef.check_balance(ctx.message.author.id) < bet):
+        await ctx.send('You don\'t have enough money!')
+    else:
+        result = random.choice(faces)
+        if (choice == result):
+            winnings = bet * 2
+            ef.ledger_update("Gambling", ctx.guild.id, "\"Casino\"", ctx.message.author.id, winnings)
+            ef.money_transfer(ctx.message.author.id, winnings)
+            ef.money_transfer("\"Casino\"", -winnings)
+            await ctx.send(f'Rolled a {result}. You win {winnings:.2f} dollars!')
+        else:
+            ef.ledger_update("Gambling", ctx.guild.id, ctx.message.author.id, "\"Casino\"", bet)
+            ef.money_transfer(ctx.message.author.id, -bet)
+            ef.money_transfer("\"Casino\"", bet)
+            await ctx.send(f'Rolled a {result}. You lose {bet:.2f} dollars!')
 
 @dice.error
 async def info_error(ctx, error):
@@ -97,9 +135,9 @@ async def balance(ctx):
 
 @client.command()
 async def give(ctx, member: discord.Member, amount: float):
+    amount = round(amount, 2)
     if (ctx.message.author.guild_permissions.administrator):
         ef.ledger_update("Test", ctx.guild.id, "\"Admin\"", member.id, amount)
-        amount = round(amount, 2)
         ef.money_transfer(member.id, amount)
         await ctx.send(f'Gave {"{:.2f}".format(round(amount, 2))} dollars to {member.name}.')
     else:
@@ -124,17 +162,36 @@ async def pay(ctx, member: discord.Member, amount: float):
         await ctx.send(f'{ctx.message.author.name} paid {member.name} {"{:.2f}".format(round(amount, 2))} dollars.')
 
 
+# Bank Commands 
+
+# $bank_balance
+
+@client.command()
+async def bank_balance(ctx):
+    msg = bank.bank_balance(ctx.message.author)
+    await ctx.send(msg)
+
+# $deposit
+
+@client.command()
+async def deposit(ctx, amount: float):
+    amount = round(amount, 2)
+    msg = bank.new_deposit(ctx.message.author, amount, ctx.guild.id)
+    await ctx.send(msg)
 
 
+# $withdraw
 
+@client.command()
+async def withdraw(ctx, amount: float):
+    amount = round(amount, 2)
+    msg = bank.new_withdrawal(ctx.message.author, amount, ctx.guild.id)
+    await ctx.send(msg)
 
-    
+# $withdraw
 
-        
-
-
-
-
-
+@client.command()
+async def interest_rates(ctx):
+    await ctx.send("The deposit rate at the bank is currently 1%. The lending rate at the bank is currently 2%.")
 
 client.run(TOKEN)
