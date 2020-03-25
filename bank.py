@@ -1,7 +1,15 @@
-import sqlite3
+import asyncio
 import datetime
 import discord
+import os
+import schedule
+import time
+import sqlite3
 import economy_functions as ef
+from dotenv import load_dotenv
+
+deposit_rate = 0.01
+lending_rate = 0.02
 
 def bank_balance(user):
     db = sqlite3.connect('main.sqlite')
@@ -70,4 +78,20 @@ def new_withdrawal(user, amount, guild_id):
             ef.money_transfer(user.id, amount)
             ef.money_transfer("\"Bank\"", -amount)
             return f"{user.name} has withdrawn {amount:.2f} dollars."
+
+def handle_interest():
+        with open("date.txt", "r") as f:
+            current_day = f.readline()
+            current_day = datetime.datetime.strptime(current_day, '%m/%d/%Y').date()
+            if (datetime.date.today() != current_day):
+                d = (datetime.date.today() - current_day).days
+                print(f"Paying interest for {d} days")
+                db = sqlite3.connect('main.sqlite')
+                cursor = db.cursor()
+                cursor.execute(f'UPDATE bank_deposits SET dollars = dollars * {(1 + deposit_rate / 365) ** d}')
+                db.commit()
+                with open("date.txt", "w+") as f:
+                    f.write(datetime.date.today().strftime('%m/%d/%Y'))
+
+
 

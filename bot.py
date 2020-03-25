@@ -1,5 +1,7 @@
+import asyncio
 import discord
 import os
+import schedule
 import sqlite3
 import random
 import economy_functions as ef
@@ -48,6 +50,7 @@ async def on_ready():
             dollars REAL
         )
     ''')
+
     print("DiscordTradingSim is ready.")
 
 # General Commands 
@@ -192,6 +195,16 @@ async def withdraw(ctx, amount: float):
 
 @client.command()
 async def interest_rates(ctx):
-    await ctx.send("The deposit rate at the bank is currently 1%. The lending rate at the bank is currently 2%.")
+    await ctx.send(f'The deposit rate at the bank is currently {bank.deposit_rate * 100}%. The lending rate at the bank is currently {bank.lending_rate * 100}%.')
+
+# Bank Proccesses
+
+# Check if interest needs to be paid out anytime a message is sent
+
+@client.event
+async def on_message(message):
+    bank.handle_interest()
+    await client.process_commands(message)
+
 
 client.run(TOKEN)
