@@ -26,7 +26,7 @@ def bank_balance(user):
         ans = round(result[0], 2)
     cursor.close()
     db.close()
-    return f'{user.name} has {ans:.2f} in deposits.'
+    return f'{user.name} has {ans:.2f} dollars in deposits.'
 
 def new_deposit(user, amount, guild_id):
     if (amount <= 0):

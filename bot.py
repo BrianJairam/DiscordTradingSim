@@ -4,8 +4,9 @@ import os
 import schedule
 import sqlite3
 import random
-import economy_functions as ef
 import bank
+import economy_functions as ef
+import trading
 from discord.ext import commands
 from dotenv import load_dotenv
 
@@ -48,6 +49,26 @@ async def on_ready():
         CREATE TABLE IF NOT EXISTS bank_loans(
             user_id INTEGER PRIMARY KEY,
             dollars REAL
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS stocks(
+            user_id INTEGER,
+            stock TEXT,
+            amount INTEGER,
+            PRIMARY KEY(user_id, stock)
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS stock_ledger(
+            transaction_id INTEGER PRIMARY KEY,
+            transaction_type TEXT,
+            guild_id,
+            user_id INTEGER,
+            stock TEXT,
+            stock_price REAL,
+            payment REAL,
+            date TEXT
         )
     ''')
 
@@ -205,6 +226,24 @@ async def interest_rates(ctx):
 async def on_message(message):
     bank.handle_interest()
     await client.process_commands(message)
+
+# Trading Commands
+
+# $get_quote
+
+@client.command()
+async def get_quote(ctx, stock_name):
+    msg = trading.get_quote(stock_name)
+    await ctx.send(msg)
+
+# $company_info
+
+@client.command()
+async def company_info(ctx, stock_name):
+    msg = trading.company_info(stock_name)
+    await ctx.send(msg)
+
+
 
 
 client.run(TOKEN)
