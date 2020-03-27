@@ -67,6 +67,7 @@ async def on_ready():
             user_id INTEGER,
             stock TEXT,
             stock_price REAL,
+            number INTEGER,
             payment REAL,
             date TEXT
         )
@@ -242,6 +243,20 @@ async def get_quote(ctx, stock_name):
 async def company_info(ctx, stock_name):
     msg = trading.company_info(stock_name)
     await ctx.send(msg)
+
+# $buy
+
+@client.command()
+async def buy(ctx, stock_name, number:int):
+    msg = trading.buy_stock(stock_name, number, ctx.message.author, ctx.guild.id)
+    await ctx.send(msg)
+
+# $portfolio
+@client.command()
+async def portfolio(ctx):
+    embed = trading.check_portfolio(ctx.message.author, 1)
+    await ctx.send(embed=embed)
+
 
 
 
