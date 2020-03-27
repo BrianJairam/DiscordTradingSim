@@ -72,6 +72,9 @@ def get_quote(stock_name):
 
 def buy_stock(stock_name, number, user, guild_id):
     # Error Checking
+    if number <= 0:
+        msg = "Please enter a positive amount!"
+        return msg
     stock_name = stock_name.upper()
     data = yf.download(tickers = stock_name, period = "1d", interval = "2m", auto_adjust = True, prepost = True)
     if (data.empty):
@@ -93,11 +96,68 @@ def buy_stock(stock_name, number, user, guild_id):
     # Update stock ledger
     stock_ledger_update("\"Buy Order\"", guild_id, user.id, stock_name, quote, number)
     # Update ledger
-    ef.ledger_update("\"Buy Stock\"", guild_id, user.id, "\"Brokerage\"", total_owed)
+    ef.ledger_update("Buy_Stock", guild_id, user.id, "\"Brokerage\"", total_owed)
     ef.money_transfer(user.id, -total_owed)
     ef.money_transfer("\"Brokerage\"", brokerage_fee)
     add_to_portfolio(user.id, stock_name, number)
     msg = f"{user.name} bought {number} shares of {stock_name} at {quote:.2f} dollars each. The total value of the transaction was {payment:.2f} dollars, plus the {brokerage_fee:.2f} dollar brokerage fee."
+    return msg
+
+def sell_stock(stock_name, number, user, guild_id):
+    newstock_name = "\"" + stock_name + "\""
+    # Sell All feature
+    if (number == "all" or number == "All" or number == "ALL"):
+        db = sqlite3.connect('main.sqlite')
+        cursor = db.cursor()
+        cursor.execute('SELECT amount FROM stocks WHERE user_id = ? AND stock = ?' , (user.id, newstock_name))
+        result = cursor.fetchone()
+        if (result is None):
+            msg = f"You have no shares of {stock_name}!"
+            return msg
+        else:
+            number = result[0]
+    # Make sure number is an int
+    number = int(number) 
+    stock_name = stock_name.upper()
+    # Error Checking
+    data = yf.download(tickers = stock_name, period = "1d", interval = "2m", auto_adjust = True, prepost = True)
+    if (data.empty):
+        msg = f"No results found for {stock_name}. Are you sure you have the right symbol?"
+        return msg
+    # Get quote
+    quote = data.tail(1)["Close"].values[0]
+    payment = round(quote * number, 2)
+    total_owed = payment - brokerage_fee
+    # Check if user has enough stock to sell
+    db = sqlite3.connect('main.sqlite')
+    cursor = db.cursor()
+    cursor.execute('SELECT amount FROM stocks WHERE user_id = ? AND stock = ?' , (user.id, newstock_name))
+    result = cursor.fetchone()
+    if (result is None):
+        msg = f"You have no shares of {stock_name}!"
+        return msg
+    current_number = result[0]
+    if (number > current_number):
+        msg = f"You only have {current_number} shares of {stock_name}!"
+        return msg
+    # Update portfolio
+    elif (number == current_number):
+        sql = ("DELETE FROM stocks WHERE user_id = ? AND stock = ?")
+        val = (user.id, newstock_name)
+    else:
+        sql = ("UPDATE stocks SET amount = ? WHERE user_id = ? AND stock = ?")
+        val = (current_number - number, user.id, newstock_name)
+    cursor.execute(sql, val)
+    db.commit()
+    cursor.close()
+    db.close()
+    # Update stock ledger
+    stock_ledger_update("\"Sell Order\"", guild_id, user.id, stock_name, quote, number)
+    # Update ledger
+    ef.ledger_update("Sell_Stock", guild_id,"\"Brokerage\"", user.id, total_owed)
+    ef.money_transfer(user.id, total_owed)
+    ef.money_transfer("\"Brokerage\"", brokerage_fee)
+    msg = f"{user.name} sold {number} shares of {stock_name} at {quote:.2f} dollars each. The total value of the transaction was {payment:.2f} dollars, minus the {brokerage_fee:.2f} dollar brokerage fee."
     return msg
 
 

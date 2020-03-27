@@ -10,6 +10,8 @@ import trading
 from discord.ext import commands
 from dotenv import load_dotenv
 
+version = "Alpha 1.1"
+
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 
@@ -81,7 +83,7 @@ async def on_ready():
 
 @client.command()
 async def version(ctx):
-    await ctx.send('Alpha 1.0')
+    await ctx.send(version)
 
 # $dice
 
@@ -251,7 +253,15 @@ async def buy(ctx, stock_name, number:int):
     msg = trading.buy_stock(stock_name, number, ctx.message.author, ctx.guild.id)
     await ctx.send(msg)
 
+# $sell
+
+@client.command()
+async def sell(ctx, stock_name, number):
+    msg = trading.sell_stock(stock_name, number, ctx.message.author, ctx.guild.id)
+    await ctx.send(msg)
+
 # $portfolio
+
 @client.command()
 async def portfolio(ctx):
     embed = trading.check_portfolio(ctx.message.author, 1)
