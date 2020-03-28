@@ -161,7 +161,7 @@ def sell_stock(stock_name, number, user, guild_id):
     return msg
 
 
-def check_portfolio(user, slide):
+def check_portfolio(user):
     db = sqlite3.connect('main.sqlite')
     cursor = db.cursor()
     cursor.execute('SELECT stock, amount FROM stocks WHERE user_id = ? ORDER BY amount DESC' , (user.id,))
@@ -187,6 +187,62 @@ def check_portfolio(user, slide):
         embed.add_field(name=stock_name, value=f"{amount} | {price:.2f} | {value:.2f}", inline=True)
     embed.set_footer(text=f"The total value of your portfolio is {total_value:.2f} dollars!")
     return embed
+
+def buy_history(user):
+    db = sqlite3.connect('main.sqlite')
+    cursor = db.cursor()
+    cursor.execute('SELECT * FROM stock_ledger WHERE user_id = ? AND transaction_type = \"\"\"Buy Order\"\"\"' , (user.id,))
+    rows = cursor.fetchall()
+    embed=discord.Embed(title=f"Buy Orders of {user.name}", description="Shares | Price Per Share | Total Value | Date", color=0x00fa00)
+    embed.set_thumbnail(url= user.avatar_url)
+    for row in rows:
+        stock_name = row[4][1:-1]
+        amount = row[6]
+        price = row[5]
+        value = row[7]
+        date = row[8]
+        embed.add_field(name=stock_name, value=f"{amount} | {price:.2f} | {value:.2f} | {date}" , inline=False)
+    embed.set_footer(text=f"Buy Orders")
+    return embed
+
+def sell_history(user):
+    db = sqlite3.connect('main.sqlite')
+    cursor = db.cursor()
+    cursor.execute('SELECT * FROM stock_ledger WHERE user_id = ? AND transaction_type = \"\"\"Sell Order\"\"\"' , (user.id,))
+    rows = cursor.fetchall()
+    embed=discord.Embed(title=f"Sell Orders of {user.name}", description="Shares | Price Per Share | Total Value | Date", color=0x00fa00)
+    embed.set_thumbnail(url= user.avatar_url)
+    for row in rows:
+        stock_name = row[4][1:-1]
+        amount = row[6]
+        price = row[5]
+        value = row[7]
+        date = row[8]
+        embed.add_field(name=stock_name, value=f"{amount} | {price:.2f} | {value:.2f} | {date}" , inline=False)
+    embed.set_footer(text=f"Sell Orders")
+    return embed
+
+def order_history(user):
+    db = sqlite3.connect('main.sqlite')
+    cursor = db.cursor()
+    cursor.execute('SELECT * FROM stock_ledger WHERE user_id = ?', (user.id,))
+    rows = cursor.fetchall()
+    embed=discord.Embed(title=f"Orders of {user.name}", description="Shares | Price Per Share | Total Value | Date", color=0x00fa00)
+    embed.set_thumbnail(url= user.avatar_url)
+    for row in rows:
+        if (row[1] == "\"Buy Order\""):
+            order_type = "BUY "
+        else:
+            order_type = "SELL "
+        stock_name = row[4][1:-1]
+        amount = row[6]
+        price = row[5]
+        value = row[7]
+        date = row[8]
+        embed.add_field(name= order_type + stock_name, value=f"{amount} | {price:.2f} | {value:.2f} | {date}" , inline=False)
+    embed.set_footer(text=f"Sell Orders")
+    return embed
+
 
 
 

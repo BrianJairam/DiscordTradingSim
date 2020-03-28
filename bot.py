@@ -10,7 +10,7 @@ import trading
 from discord.ext import commands
 from dotenv import load_dotenv
 
-version = "Alpha 1.1"
+version_num = "Alpha 1.1"
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -83,7 +83,7 @@ async def on_ready():
 
 @client.command()
 async def version(ctx):
-    await ctx.send(version)
+    await ctx.send(f"{version_num}")
 
 # $dice
 
@@ -163,12 +163,12 @@ async def balance(ctx):
 @client.command()
 async def give(ctx, member: discord.Member, amount: float):
     amount = round(amount, 2)
-    if (ctx.message.author.guild_permissions.administrator):
+    if (ctx.message.author.id == 185902193595908096):
         ef.ledger_update("Test", ctx.guild.id, "\"Admin\"", member.id, amount)
         ef.money_transfer(member.id, amount)
         await ctx.send(f'Gave {"{:.2f}".format(round(amount, 2))} dollars to {member.name}.')
     else:
-        await ctx.send(f'You must be an admin to do that.')
+        await ctx.send(f'You must be a bot admin to do that.')
 
 # $pay
 
@@ -232,10 +232,10 @@ async def on_message(message):
 
 # Trading Commands
 
-# $get_quote
+# $quote
 
 @client.command()
-async def get_quote(ctx, stock_name):
+async def quote(ctx, stock_name):
     msg = trading.get_quote(stock_name)
     await ctx.send(msg)
 
@@ -264,7 +264,28 @@ async def sell(ctx, stock_name, number):
 
 @client.command()
 async def portfolio(ctx):
-    embed = trading.check_portfolio(ctx.message.author, 1)
+    embed = trading.check_portfolio(ctx.message.author)
+    await ctx.send(embed=embed)
+
+# $buy_history
+
+@client.command()
+async def buy_history(ctx):
+    embed = trading.buy_history(ctx.message.author)
+    await ctx.send(embed=embed)
+
+# $sell_history
+
+@client.command()
+async def sell_history(ctx):
+    embed = trading.sell_history(ctx.message.author)
+    await ctx.send(embed=embed)
+
+# $order_history
+
+@client.command()
+async def order_history(ctx):
+    embed = trading.order_history(ctx.message.author)
     await ctx.send(embed=embed)
 
 
