@@ -7,6 +7,9 @@ import schedule
 import time
 import pandas as pd
 import numpy as np
+import matplotlib.dates as mdates
+import matplotlib.pyplot as plt
+import math
 import yfinance as yf
 import iexfinance
 import sqlite3
@@ -14,6 +17,8 @@ import bank
 import economy_functions as ef
 from dotenv import load_dotenv
 from pandas_datareader import data as pdr
+from pandas.plotting import register_matplotlib_converters
+register_matplotlib_converters()
 
 brokerage_fee = 10.00
 
@@ -39,8 +44,8 @@ def stock_ledger_update(transaction_type, guild_id, user_id, stock_name, stock_p
     stock_name = stock_name.upper()
     db = sqlite3.connect('main.sqlite')
     cursor = db.cursor()
-    ledger_sql = ("INSERT INTO stock_ledger (transaction_type, guild_id, user_id, stock, stock_price, number, payment, date) VALUES (?, ?, ?, ?, ?, ?, ?, datetime(\'now\'))")
-    ledger_val = (transaction_type, guild_id, user_id, "\"" + stock_name + "\"", stock_price, number, stock_price * number)
+    ledger_sql = ("INSERT INTO stock_ledger (transaction_type, guild_id, user_id, stock, stock_price, number, payment, date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+    ledger_val = (transaction_type, guild_id, user_id, "\"" + stock_name + "\"", stock_price, number, stock_price * number, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     cursor.execute(ledger_sql, ledger_val)
     db.commit()
     cursor.close()
@@ -243,6 +248,92 @@ def order_history(user):
     embed.set_footer(text=f"Sell Orders")
     return embed
 
+def portfolio_history(user, start, inc):
+    inc = "1d"
+    db = sqlite3.connect('main.sqlite')
+    cursor = db.cursor()
+    cursor.execute('SELECT * FROM stock_ledger WHERE user_id = ?', (user.id,))
+    ledger_data = cursor.fetchall()
+    print(ledger_data)
+    if (ledger_data == None):
+        print("User has no portfolio!")
+        return
+    if (start == "begin"):
+        start = datetime.datetime.strptime(ledger_data[0][8], '%Y-%m-%d %H:%M:%S').date()
+    stock_history = []
+    histories =[ ]
+    end = datetime.date.today()
+    # Produce a dictionary that holds all historical stock data
+    for row in ledger_data:
+        stock = row[4][1 : -1]
+        if (stock not in stock_history):
+            start_date = start.strftime("%Y-%m-%d")
+            end_date = end.strftime("%Y-%m-%d")
+            yf_stock_data = yf.download(stock, start=start_date, end=end_date, interval=inc)
+            stock_history.append(stock)
+            histories.append(yf_stock_data)
+    # Set some variables to track elements of value over time
+    cumulative_buysell = 0
+    stocks = {}
+    i = 0
+    max_i = len(ledger_data) - 1
+    dates = []
+    values = []
+    cur_date = start
+    # Loop through dates, calculting value of portfolio at any given date (upto the end date)
+    while (cur_date < end):
+        if (i <= max_i):
+            while (datetime.datetime.strptime(ledger_data[i][8], '%Y-%m-%d %H:%M:%S').date() <= cur_date):
+                if (ledger_data[i][1] == "\"Buy Order\""):
+                    cumulative_buysell -= ledger_data[i][7]
+                    stock = ledger_data[i][4][1 : -1]
+                    number = ledger_data[i][6]
+                    if stock not in stocks:
+                        stocks[stock] = number
+                    else:
+                        stocks[stock] += number
+                elif (ledger_data[i][1] == "\"Sell Order\""):
+                    cumulative_buysell += ledger_data[i][7]
+                    stock = ledger_data[i][4][1 : -1]
+                    number = ledger_data[i][6]
+                    stocks[stock] -= number
+                i += 1
+                if (i > max_i):
+                    break
+        value = cumulative_buysell
+        for stock in stocks:
+            number = stocks[stock]
+            for j in range(len(stock_history)):
+                if (stock_history[j] == stock):
+                    break
+            last_date = cur_date
+            while (last_date.strftime("%Y-%m-%d") not in histories[j]["Close"]):
+                last_date -= datetime.timedelta(days=1)
+            value += histories[j]["Close"][last_date.strftime("%Y-%m-%d")] * number
+        dates.append(cur_date)
+        values.append(round(value, 2))
+        cur_date += datetime.timedelta(days=1)
+    df = pd.DataFrame()
+    df["Date"] = dates
+    df["Value"] = values
+    df_abs = df[["Value"]].applymap(lambda x: abs(x))
+    m = df_abs["Value"].max()
+
+    # Graph
+    interval = math.ceil(len(dates) / 30) 
+    plt.xlabel("Date")
+    plt.ylabel("Gain/Loss ($)")
+    plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+    plt.gca().xaxis.set_major_locator(mdates.DayLocator(interval=interval))
+    plt.plot(dates,values)
+    plt.gcf().autofmt_xdate()
+    plt.ylim(-1.25 * m, 1.25 * m)
+    plt.gca().grid(linestyle='-', linewidth='0.5', color='white')
+    plt.gca().set_facecolor('#e5e5e5')
+    plt.gca().get_lines()[0].set_color("#3b7dd8")
+    plt.title(f"Net Gain/Loss of {user.name}\'s Portfolio Over Time")
+    plt.savefig('Graphs/graph.png')
+    plt.close(fig=None)
 
 
 

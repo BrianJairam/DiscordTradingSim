@@ -288,6 +288,12 @@ async def order_history(ctx):
     embed = trading.order_history(ctx.message.author)
     await ctx.send(embed=embed)
 
+# $portfolio_history
+@client.command()
+async def portfolio_history(ctx):
+    trading.portfolio_history(ctx.message.author, "begin", 1)
+    await ctx.send(file=discord.File('Graphs/graph.png'))
+
 
 
 
