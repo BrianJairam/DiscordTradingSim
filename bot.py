@@ -1,12 +1,14 @@
 import asyncio
+import bank
 import discord
 import os
+import random
 import schedule
 import sqlite3
-import random
-import bank
-import economy_functions as ef
 import trading
+
+import economy_functions as ef
+
 from discord.ext import commands
 from dotenv import load_dotenv
 
@@ -15,7 +17,8 @@ version_num = "Alpha 1.1"
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 
-client = commands.Bot(command_prefix = '$')
+client = commands.Bot(command_prefix='$')
+
 
 @client.event
 async def on_ready():
@@ -77,16 +80,15 @@ async def on_ready():
 
     print("DiscordTradingSim is ready.")
 
-# General Commands 
+# General Commands
 
 # $version
-
 @client.command()
 async def version(ctx):
     await ctx.send(f"{version_num}")
 
-# $dice
 
+# $dice
 @client.command()
 async def dice(ctx, choice):
     faces = [1, 2, 3, 4, 5, 6]
@@ -96,12 +98,14 @@ async def dice(ctx, choice):
     else:
         result = random.choice(faces)
         if (choice == result):
-            ef.ledger_update("Gambling", ctx.guild.id, "\"Casino\"", ctx.message.author.id, 0.01)
+            ef.ledger_update("Gambling", ctx.guild.id,
+                             "\"Casino\"", ctx.message.author.id, 0.01)
             ef.money_transfer(ctx.message.author.id, 0.01)
             ef.money_transfer("\"Casino\"", -0.01)
             await ctx.send(f'Rolled a {result}. You win $0.01!')
         else:
             await ctx.send(f'Rolled a {result}. You lose!')
+
 
 @client.command()
 async def wagered_dice(ctx, choice, bet: float):
@@ -117,23 +121,27 @@ async def wagered_dice(ctx, choice, bet: float):
         result = random.choice(faces)
         if (choice == result):
             winnings = bet * 2
-            ef.ledger_update("Gambling", ctx.guild.id, "\"Casino\"", ctx.message.author.id, winnings)
+            ef.ledger_update("Gambling", ctx.guild.id,
+                             "\"Casino\"", ctx.message.author.id, winnings)
             ef.money_transfer(ctx.message.author.id, winnings)
             ef.money_transfer("\"Casino\"", -winnings)
-            await ctx.send(f'Rolled a {result}. You win {winnings:.2f} dollars!')
+            await ctx.send(f'Rolled a {result}. \
+                             You win {winnings:.2f} dollars!')
         else:
-            ef.ledger_update("Gambling", ctx.guild.id, ctx.message.author.id, "\"Casino\"", bet)
+            ef.ledger_update("Gambling", ctx.guild.id, ctx.message.author.id,
+                             "\"Casino\"", bet)
             ef.money_transfer(ctx.message.author.id, -bet)
             ef.money_transfer("\"Casino\"", bet)
             await ctx.send(f'Rolled a {result}. You lose {bet:.2f} dollars!')
+
 
 @dice.error
 async def info_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
         await ctx.send('Please enter a number from 1-6.')
 
-# $iscliff
 
+# $iscliff
 @client.command()
 async def iscliff(ctx, *, member: discord.Member):
     if (member.name == 'CliffRouge'):
@@ -141,65 +149,68 @@ async def iscliff(ctx, *, member: discord.Member):
     else:
         await ctx.send('Not chill, not chill!')
 
+
 @iscliff.error
 async def info_error(ctx, error):
     if isinstance(error, commands.BadArgument):
         await ctx.send('Thats like, not even a user on this server bro.')
     elif isinstance(error, commands.MissingRequiredArgument):
-        await ctx.send('Gimme a user and I can tell you if they are CliffRouge or not.')
+        await ctx.send('Gimme a user and I can tell you if \
+                        they are CliffRouge or not.')
 
-# Economy Commands 
+# Economy Commands
 
 # $balance
-
 @client.command()
 async def balance(ctx):
     balance = ef.check_balance(ctx.message.author.id)
-    await ctx.send(f'{ctx.message.author.name} has {"{:.2f}".format(round(balance, 2))} dollars.')
+    await ctx.send(f'{ctx.message.author.name} has \
+                     {"{:.2f}".format(round(balance, 2))} dollars.')
 
 
 # $give
-
 @client.command()
 async def give(ctx, member: discord.Member, amount: float):
     amount = round(amount, 2)
     if (ctx.message.author.id == 185902193595908096):
         ef.ledger_update("Test", ctx.guild.id, "\"Admin\"", member.id, amount)
         ef.money_transfer(member.id, amount)
-        await ctx.send(f'Gave {"{:.2f}".format(round(amount, 2))} dollars to {member.name}.')
+        await ctx.send(f'Gave {"{:.2f}".format(round(amount, 2))} \
+                         dollars to {member.name}.')
     else:
         await ctx.send(f'You must be a bot admin to do that.')
 
-# $pay
 
+# $pay
 @client.command()
 async def pay(ctx, member: discord.Member, amount: float):
     amount = round(amount, 2)
     gbalance = ef.check_balance(ctx.message.author.id)
-    if (amount <= 0): 
+    if (amount <= 0):
         await ctx.send(f'Please enter a positive amount!')
     elif (ctx.message.author.id == member.id):
         await ctx.send(f'You can\'t pay yourself!')
     elif (gbalance - amount < 0):
         await ctx.send(f'You do not have enough money!')
     else:
-        ef.ledger_update("User_Transfer", ctx.guild.id, ctx.message.author.id, member.id, amount)
+        ef.ledger_update("User_Transfer", ctx.guild.id,
+                         ctx.message.author.id, member.id, amount)
         ef.money_transfer(member.id, amount)
         ef.money_transfer(ctx.message.author.id, -amount)
-        await ctx.send(f'{ctx.message.author.name} paid {member.name} {"{:.2f}".format(round(amount, 2))} dollars.')
+        await ctx.send(f'{ctx.message.author.name} paid {member.name} \
+                         {"{:.2f}".format(round(amount, 2))} dollars.')
 
 
-# Bank Commands 
+# Bank Commands
 
 # $bank_balance
-
 @client.command()
 async def bank_balance(ctx):
     msg = bank.bank_balance(ctx.message.author)
     await ctx.send(msg)
 
-# $deposit
 
+# $deposit
 @client.command()
 async def deposit(ctx, amount: float):
     amount = round(amount, 2)
@@ -208,23 +219,24 @@ async def deposit(ctx, amount: float):
 
 
 # $withdraw
-
 @client.command()
 async def withdraw(ctx, amount: float):
     amount = round(amount, 2)
     msg = bank.new_withdrawal(ctx.message.author, amount, ctx.guild.id)
     await ctx.send(msg)
 
-# $withdraw
 
+# $withdraw
 @client.command()
 async def interest_rates(ctx):
-    await ctx.send(f'The deposit rate at the bank is currently {bank.deposit_rate * 100}%. The lending rate at the bank is currently {bank.lending_rate * 100}%.')
+    await ctx.send(f'The deposit rate at the bank is currently \
+                     {bank.deposit_rate * 100}%. The lending rate at \
+                     the bank is currently {bank.lending_rate * 100}%.')
+
 
 # Bank Proccesses
 
 # Check if interest needs to be paid out anytime a message is sent
-
 @client.event
 async def on_message(message):
     bank.handle_interest()
@@ -233,60 +245,62 @@ async def on_message(message):
 # Trading Commands
 
 # $quote
-
 @client.command()
 async def quote(ctx, stock_name):
     msg = trading.get_quote(stock_name)
     await ctx.send(msg)
 
-# $company_info
 
+# $company_info
 @client.command()
 async def company_info(ctx, stock_name):
     msg = trading.company_info(stock_name)
     await ctx.send(msg)
 
-# $buy
 
+# $buy
 @client.command()
-async def buy(ctx, stock_name, number:int):
-    msg = trading.buy_stock(stock_name, number, ctx.message.author, ctx.guild.id)
+async def buy(ctx, stock_name, number: int):
+    msg = trading.buy_stock(stock_name, number,
+                            ctx.message.author, ctx.guild.id)
     await ctx.send(msg)
+
 
 # $sell
-
 @client.command()
 async def sell(ctx, stock_name, number):
-    msg = trading.sell_stock(stock_name, number, ctx.message.author, ctx.guild.id)
+    msg = trading.sell_stock(stock_name, number,
+                             ctx.message.author, ctx.guild.id)
     await ctx.send(msg)
 
-# $portfolio
 
+# $portfolio
 @client.command()
 async def portfolio(ctx):
     embed = trading.check_portfolio(ctx.message.author)
     await ctx.send(embed=embed)
 
-# $buy_history
 
+# $buy_history
 @client.command()
 async def buy_history(ctx):
     embed = trading.buy_history(ctx.message.author)
     await ctx.send(embed=embed)
 
-# $sell_history
 
+# $sell_history
 @client.command()
 async def sell_history(ctx):
     embed = trading.sell_history(ctx.message.author)
     await ctx.send(embed=embed)
 
-# $order_history
 
+# $order_history
 @client.command()
 async def order_history(ctx):
     embed = trading.order_history(ctx.message.author)
     await ctx.send(embed=embed)
+
 
 # $portfolio_history
 @client.command()
@@ -296,7 +310,5 @@ async def portfolio_history(ctx):
         await ctx.send(file=discord.File('Graphs/graph.png'))
     else:
         ctx.send(msg)
-
-
 
 client.run(TOKEN)

@@ -3,18 +3,22 @@ import datetime
 import discord
 import os
 import schedule
-import time
 import sqlite3
+import time
+
 import economy_functions as ef
+
 from dotenv import load_dotenv
 
-deposit_rate = 0.01
-lending_rate = 0.02
+DEPOSIT_RATE = 0.01
+LENDING_RATE = 0.02
+
 
 def bank_balance(user):
     db = sqlite3.connect('main.sqlite')
     cursor = db.cursor()
-    cursor.execute('SELECT dollars FROM bank_deposits WHERE user_id = ?', (user.id,))
+    cursor.execute('SELECT dollars FROM bank_deposits WHERE user_id = ?',
+                   (user.id,))
     result = cursor.fetchone()
     if result is None:
         sql = ("INSERT INTO bank_deposits (user_id, dollars) VALUES(?, ?)")
@@ -28,6 +32,7 @@ def bank_balance(user):
     db.close()
     return f'{user.name} has {ans:.2f} dollars in deposits.'
 
+
 def new_deposit(user, amount, guild_id):
     if (amount <= 0):
         return "Please enter a positive amount."
@@ -36,7 +41,8 @@ def new_deposit(user, amount, guild_id):
     else:
         db = sqlite3.connect('main.sqlite')
         cursor = db.cursor()
-        cursor.execute('SELECT dollars FROM bank_deposits WHERE user_id = ?', (user.id,))
+        cursor.execute('SELECT dollars FROM bank_deposits WHERE user_id = ?',
+                       (user.id,))
         result = cursor.fetchone()
         if result is None:
             sql = ("INSERT INTO bank_deposits (user_id, dollars) VALUES(?, ?)")
@@ -54,13 +60,15 @@ def new_deposit(user, amount, guild_id):
     ef.money_transfer(user.id, -amount)
     return f"{user.name} deposited {amount:.2f} dollars."
 
+
 def new_withdrawal(user, amount, guild_id):
     if (amount <= 0):
         return "Please enter a positive amount."
     else:
         db = sqlite3.connect('main.sqlite')
         cursor = db.cursor()
-        cursor.execute('SELECT dollars FROM bank_deposits WHERE user_id = ?', (user.id,))
+        cursor.execute('SELECT dollars FROM bank_deposits WHERE user_id = ?',
+                       (user.id,))
         result = cursor.fetchone()
         if (result is None or result[0] < amount):
             cursor.close()
@@ -74,24 +82,24 @@ def new_withdrawal(user, amount, guild_id):
             db.commit()
             cursor.close()
             db.close()
-            ef.ledger_update("Bank_Withdrawal", guild_id, "\"Bank\"", user.id, amount)
+            ef.ledger_update("Bank_Withdrawal", guild_id,
+                             "\"Bank\"", user.id, amount)
             ef.money_transfer(user.id, amount)
             ef.money_transfer("\"Bank\"", -amount)
             return f"{user.name} has withdrawn {amount:.2f} dollars."
 
+
 def handle_interest():
-        with open("date.txt", "r") as f:
-            current_day = f.readline()
-            current_day = datetime.datetime.strptime(current_day, '%m/%d/%Y').date()
-            if (datetime.date.today() != current_day):
-                d = (datetime.date.today() - current_day).days
-                print(f"Paying interest for {d} days")
-                db = sqlite3.connect('main.sqlite')
-                cursor = db.cursor()
-                cursor.execute(f'UPDATE bank_deposits SET dollars = dollars * {(1 + deposit_rate / 365) ** d}')
-                db.commit()
-                with open("date.txt", "w+") as f:
-                    f.write(datetime.date.today().strftime('%m/%d/%Y'))
-
-
-
+    with open("date.txt", "r") as f:
+        current_day = datetime.datetime.strptime(f.readline(),
+                                                 '%m/%d/%Y').date()
+        if (datetime.date.today() != current_day):
+            d = (datetime.date.today() - current_day).days
+            print(f"Paying interest for {d} days")
+            db = sqlite3.connect('main.sqlite')
+            cursor = db.cursor()
+            cursor.execute(f'UPDATE bank_deposits SET dollars = \
+                             dollars * {(1 + DEPOSIT_RATE / 365) ** d}')
+            db.commit()
+            with open("date.txt", "w+") as f:
+                f.write(datetime.date.today().strftime('%m/%d/%Y'))
