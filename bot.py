@@ -291,10 +291,11 @@ async def order_history(ctx):
 # $portfolio_history
 @client.command()
 async def portfolio_history(ctx):
-    trading.portfolio_history(ctx.message.author, "begin", 1)
-    await ctx.send(file=discord.File('Graphs/graph.png'))
-
-
+    msg = trading.portfolio_history(ctx.message.author, "begin", 1)
+    if (msg == "Graph made"):
+        await ctx.send(file=discord.File('Graphs/graph.png'))
+    else:
+        ctx.send(msg)
 
 
 

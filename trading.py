@@ -254,21 +254,27 @@ def portfolio_history(user, start, inc):
     cursor = db.cursor()
     cursor.execute('SELECT * FROM stock_ledger WHERE user_id = ?', (user.id,))
     ledger_data = cursor.fetchall()
-    print(ledger_data)
     if (ledger_data == None):
-        print("User has no portfolio!")
-        return
+        return "User has no portfolio!"
     if (start == "begin"):
         start = datetime.datetime.strptime(ledger_data[0][8], '%Y-%m-%d %H:%M:%S').date()
     stock_history = []
-    histories =[ ]
+    histories = []
     end = datetime.date.today()
+    if (end.weekday() >= 5):
+        end -= datetime.timedelta(days= end.weekday() - 4)
+    if (start.weekday() >= 5):
+        start -= datetime.timedelta(days= start.weekday() - 4)
     # Produce a dictionary that holds all historical stock data
     for row in ledger_data:
-        stock = row[4][1 : -1]
+        stock = row[4][1:-1]
         if (stock not in stock_history):
             start_date = start.strftime("%Y-%m-%d")
             end_date = end.strftime("%Y-%m-%d")
+            print(stock)
+            print(start_date)
+            print(end_date)
+            print(inc)
             yf_stock_data = yf.download(stock, start=start_date, end=end_date, interval=inc)
             stock_history.append(stock)
             histories.append(yf_stock_data)
@@ -280,7 +286,7 @@ def portfolio_history(user, start, inc):
     dates = []
     values = []
     cur_date = start
-    # Loop through dates, calculting value of portfolio at any given date (upto the end date)
+    # Loop through dates, calculting value of portfolio at any given date (upto but not including the end date)
     while (cur_date < end):
         if (i <= max_i):
             while (datetime.datetime.strptime(ledger_data[i][8], '%Y-%m-%d %H:%M:%S').date() <= cur_date):
@@ -316,6 +322,7 @@ def portfolio_history(user, start, inc):
     df = pd.DataFrame()
     df["Date"] = dates
     df["Value"] = values
+    print(df)
     df_abs = df[["Value"]].applymap(lambda x: abs(x))
     m = df_abs["Value"].max()
 
@@ -334,16 +341,11 @@ def portfolio_history(user, start, inc):
     plt.title(f"Net Gain/Loss of {user.name}\'s Portfolio Over Time")
     plt.savefig('Graphs/graph.png')
     plt.close(fig=None)
-
+    return "Graph made"
 
 
 
 
     
     
-    
-
-
-
-
 
