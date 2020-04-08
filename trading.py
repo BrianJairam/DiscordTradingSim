@@ -67,14 +67,13 @@ def company_info(stock_name):
     stock_name = stock_name.upper()
     company = yf.Ticker(stock_name)
     info = company.info
-    msg = f"""**Company Name:** {info['longName']} \n
-              **Sector:** {info['sector']} \n
-              **Industry:** {info['industry']} \n
-              **Country**: {info['country']} \n
-              **Website**: {info['website']} \n
-              **Summary**: {info['longBusinessSummary'][:1500] + "..."}
-           """
-    return msg
+    return f"""**Company Name:** {info['longName']} \n
+               **Sector:** {info['sector']} \n
+               **Industry:** {info['industry']} \n
+               **Country**: {info['country']} \n
+               **Website**: {info['website']} \n
+               **Summary**: {info['longBusinessSummary'][:1500] + "..."}
+            """
 
 
 def get_quote(stock_name):
@@ -82,26 +81,25 @@ def get_quote(stock_name):
     data = yf.download(tickers=stock_name, period="1d",
                        interval="2m", auto_adjust=True, prepost=True)
     if (data.empty):
-        msg = f"No results found for {stock_name}. \
-                Are you sure you have the right symbol?"
+        return f"No results found for {stock_name}. " \
+               "Are you sure you have the right symbol?"
     else:
         quote = round(data.tail(1)["Close"].values[0], 2)
-        msg = f"The current quote for {stock_name} is {quote:.2f} dollars."
-    return msg
+        return f"The current quote for {stock_name} is {quote:.2f} dollars."
 
 
 def buy_stock(stock_name, number, user, guild_id):
     # Error Checking
     if number <= 0:
-        msg = "Please enter a positive amount!"
-        return msg
+        return "Please enter a positive amount!"
+
     stock_name = stock_name.upper()
     data = yf.download(tickers=stock_name, period="1d",
                        interval="2m", auto_adjust=True, prepost=True)
     if (data.empty):
-        msg = f"No results found for {stock_name}. \
-                Are you sure you have the right symbol?"
-        return msg
+        return f"No results found for {stock_name}. " \
+               "Are you sure you have the right symbol?"
+
     # Get quote and payment
     quote = data.tail(1)["Close"].values[0]
     payment = quote * number
@@ -111,14 +109,14 @@ def buy_stock(stock_name, number, user, guild_id):
     if (bal < total_owed):
         if (bal > 10):
             number_max = math.floor((bal - 10) / quote)
-            msg = f"You do not have the required funds to buy {number} \
-                    shares of {stock_name}! The maximum number of shares \
-                    you can afford is {number_max}..."
+            return f"You do not have the required funds to buy {number} " \
+                   "shares of {stock_name}! The maximum number of shares " \
+                   "you can afford is {number_max}..."
         else:
-            msg = f"You do not have the required funds to buy {number} \
-                    shares of {stock_name}! You have less than \
-                    {BROKERAGE_FEE:.2f} dollars, the brokerage fee."
-        return msg
+            return f"You do not have the required funds to buy {number} " \
+                   "shares of {stock_name}! You have less than " \
+                   "{BROKERAGE_FEE:.2f} dollars, the brokerage fee."
+
     # Update stock ledger
     stock_ledger_update("\"Buy Order\"", guild_id, user.id,
                         stock_name, quote, number)
@@ -128,10 +126,10 @@ def buy_stock(stock_name, number, user, guild_id):
     ef.money_transfer(user.id, -total_owed)
     ef.money_transfer("\"Brokerage\"", BROKERAGE_FEE)
     add_to_portfolio(user.id, stock_name, number)
-    return f"{user.name} bought {number} shares of {stock_name} at \
-            {quote:.2f} dollars each. The total value of the transaction was \
-            {payment:.2f} dollars, plus the {BROKERAGE_FEE:.2f} \
-            dollar brokerage fee."
+    return f"{user.name} bought {number} shares of {stock_name} at " \
+            "{quote:.2f} dollars each. The total value of the transaction was " \
+            "{payment:.2f} dollars, plus the {BROKERAGE_FEE:.2f} " \
+            "dollar brokerage fee."
 
 
 def sell_stock(stock_name, number, user, guild_id):
@@ -144,8 +142,7 @@ def sell_stock(stock_name, number, user, guild_id):
                         AND stock = ?', (user.id, newstock_name))
         result = cursor.fetchone()
         if (result is None):
-            msg = f"You have no shares of {stock_name}!"
-            return msg
+            return f"You have no shares of {stock_name}!"
         else:
             number = result[0]
     # Make sure number is an int
@@ -191,10 +188,10 @@ def sell_stock(stock_name, number, user, guild_id):
                      user.id, total_owed)
     ef.money_transfer(user.id, total_owed)
     ef.money_transfer("\"Brokerage\"", BROKERAGE_FEE)
-    return f"{user.name} sold {number} shares of {stock_name} at {quote:.2f} \
-             dollars each. The total value of the transaction was \
-             {payment:.2f} dollars, minus the {BROKERAGE_FEE:.2f} \
-             dollar brokerage fee."
+    return f"{user.name} sold {number} shares of {stock_name} at {quote:.2f} " \
+            "dollars each. The total value of the transaction was " \
+            "{payment:.2f} dollars, minus the {BROKERAGE_FEE:.2f} " \
+            "dollar brokerage fee."
 
 
 def check_portfolio(user):
@@ -229,8 +226,8 @@ def check_portfolio(user):
         embed.add_field(name=stock_name,
                         value=f"{amount} | {price:.2f} | {value:.2f}",
                         inline=True)
-    embed.set_footer(text=f"The total value of your portfolio is \
-                            {total_value:.2f} dollars!")
+    embed.set_footer(text=f"The total value of your portfolio is " \
+                           "{total_value:.2f} dollars!")
     return embed
 
 
@@ -242,8 +239,8 @@ def buy_history(user):
                    (user.id,))
     rows = cursor.fetchall()
     embed = discord.Embed(title=f"Buy Orders of {user.name}",
-                          description="Shares | Price Per Share | \
-                                       Total Value | Date",
+                          description="Shares | Price Per Share | " \
+                                      "Total Value | Date",
                           color=0x00fa00)
     embed.set_thumbnail(url=user.avatar_url)
     for row in rows:
@@ -267,8 +264,8 @@ def sell_history(user):
                    (user.id,))
     rows = cursor.fetchall()
     embed = discord.Embed(title=f"Sell Orders of {user.name}",
-                          description="Shares | Price Per Share | \
-                                       Total Value | Date",
+                          description="Shares | Price Per Share | " \
+                                      "Total Value | Date",
                           color=0x00fa00)
     embed.set_thumbnail(url=user.avatar_url)
     for row in rows:
@@ -290,8 +287,8 @@ def order_history(user):
     cursor.execute('SELECT * FROM stock_ledger WHERE user_id = ?', (user.id,))
     rows = cursor.fetchall()
     embed = discord.Embed(title=f"Orders of {user.name}",
-                          description="Shares | Price Per Share | \
-                                       Total Value | Date",
+                          description="Shares | Price Per Share | " \
+                                      "Total Value | Date",
                           color=0x00fa00)
     embed.set_thumbnail(url=user.avatar_url)
     for row in rows:
