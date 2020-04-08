@@ -21,7 +21,7 @@ def bank_balance(user):
                    (user.id,))
     result = cursor.fetchone()
     if result is None:
-        sql = ("INSERT INTO bank_deposits (user_id, dollars) VALUES(?, ?)")
+        sql = ('INSERT INTO bank_deposits (user_id, dollars) VALUES(?, ?)')
         val = (user.id, 0)
         cursor.execute(sql, val)
         db.commit()
@@ -45,11 +45,11 @@ def new_deposit(user, amount, guild_id):
                        (user.id,))
         result = cursor.fetchone()
         if result is None:
-            sql = ("INSERT INTO bank_deposits (user_id, dollars) VALUES(?, ?)")
+            sql = ('INSERT INTO bank_deposits (user_id, dollars) VALUES(?, ?)')
             val = (user.id, amount)
         else:
             current_balance = result[0]
-            sql = ("UPDATE bank_deposits SET dollars = ? WHERE user_id = ?")
+            sql = ('UPDATE bank_deposits SET dollars = ? WHERE user_id = ?')
             val = (current_balance + amount, user.id)
     cursor.execute(sql, val)
     db.commit()
@@ -76,7 +76,7 @@ def new_withdrawal(user, amount, guild_id):
             return "You do not have enough money in your account."
         else:
             current_balance = result[0]
-            sql = ("UPDATE bank_deposits SET dollars = ? WHERE user_id = ?")
+            sql = ('UPDATE bank_deposits SET dollars = ? WHERE user_id = ?')
             val = (current_balance - amount, user.id)
             cursor.execute(sql, val)
             db.commit()
@@ -98,8 +98,8 @@ def handle_interest():
             print(f"Paying interest for {d} days")
             db = sqlite3.connect('main.sqlite')
             cursor = db.cursor()
-            cursor.execute(f'UPDATE bank_deposits SET dollars = \
-                             dollars * {(1 + DEPOSIT_RATE / 365) ** d}')
+            cursor.execute(f'UPDATE bank_deposits SET dollars = ' \
+                            'dollars * {(1 + DEPOSIT_RATE / 365) ** d}')
             db.commit()
             with open("date.txt", "w+") as f:
                 f.write(datetime.date.today().strftime('%m/%d/%Y'))
