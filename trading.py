@@ -82,7 +82,7 @@ def get_quote(stock_name):
                        interval="2m", auto_adjust=True, prepost=True)
     if (data.empty):
         return f"No results found for {stock_name}. " \
-               "Are you sure you have the right symbol?"
+               f"Are you sure you have the right symbol?"
     else:
         quote = round(data.tail(1)["Close"].values[0], 2)
         return f"The current quote for {stock_name} is {quote:.2f} dollars."
@@ -98,7 +98,7 @@ def buy_stock(stock_name, number, user, guild_id):
                        interval="2m", auto_adjust=True, prepost=True)
     if (data.empty):
         return f"No results found for {stock_name}. " \
-               "Are you sure you have the right symbol?"
+               f"Are you sure you have the right symbol?"
 
     # Get quote and payment
     quote = data.tail(1)["Close"].values[0]
@@ -110,12 +110,12 @@ def buy_stock(stock_name, number, user, guild_id):
         if (bal > 10):
             number_max = math.floor((bal - 10) / quote)
             return f"You do not have the required funds to buy {number} " \
-                   "shares of {stock_name}! The maximum number of shares " \
-                   "you can afford is {number_max}..."
+                   f"shares of {stock_name}! The maximum number of shares " \
+                   f"you can afford is {number_max}..."
         else:
             return f"You do not have the required funds to buy {number} " \
-                   "shares of {stock_name}! You have less than " \
-                   "{BROKERAGE_FEE:.2f} dollars, the brokerage fee."
+                   f"shares of {stock_name}! You have less than " \
+                   f"{BROKERAGE_FEE:.2f} dollars, the brokerage fee."
 
     # Update stock ledger
     stock_ledger_update("\"Buy Order\"", guild_id, user.id,
@@ -127,9 +127,9 @@ def buy_stock(stock_name, number, user, guild_id):
     ef.money_transfer("\"Brokerage\"", BROKERAGE_FEE)
     add_to_portfolio(user.id, stock_name, number)
     return f"{user.name} bought {number} shares of {stock_name} at " \
-            "{quote:.2f} dollars each. The total value of the transaction was " \
-            "{payment:.2f} dollars, plus the {BROKERAGE_FEE:.2f} " \
-            "dollar brokerage fee."
+            f"{quote:.2f} dollars each. The total value of the transaction was " \
+            f"{payment:.2f} dollars, plus the {BROKERAGE_FEE:.2f} " \
+            f"dollar brokerage fee."
 
 
 def sell_stock(stock_name, number, user, guild_id):
@@ -189,9 +189,9 @@ def sell_stock(stock_name, number, user, guild_id):
     ef.money_transfer(user.id, total_owed)
     ef.money_transfer("\"Brokerage\"", BROKERAGE_FEE)
     return f"{user.name} sold {number} shares of {stock_name} at {quote:.2f} " \
-            "dollars each. The total value of the transaction was " \
-            "{payment:.2f} dollars, minus the {BROKERAGE_FEE:.2f} " \
-            "dollar brokerage fee."
+            f"dollars each. The total value of the transaction was " \
+            f"{payment:.2f} dollars, minus the {BROKERAGE_FEE:.2f} " \
+            f"dollar brokerage fee."
 
 
 def check_portfolio(user):
@@ -227,7 +227,7 @@ def check_portfolio(user):
                         value=f"{amount} | {price:.2f} | {value:.2f}",
                         inline=True)
     embed.set_footer(text=f"The total value of your portfolio is " \
-                           "{total_value:.2f} dollars!")
+                           f"{total_value:.2f} dollars!")
     return embed
 
 

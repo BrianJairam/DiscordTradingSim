@@ -99,7 +99,7 @@ def handle_interest():
             db = sqlite3.connect('main.sqlite')
             cursor = db.cursor()
             cursor.execute(f'UPDATE bank_deposits SET dollars = ' \
-                            'dollars * {(1 + DEPOSIT_RATE / 365) ** d}')
+                            f'dollars * {(1 + DEPOSIT_RATE / 365) ** d}')
             db.commit()
             with open("date.txt", "w+") as f:
                 f.write(datetime.date.today().strftime('%m/%d/%Y'))

@@ -126,7 +126,7 @@ async def wagered_dice(ctx, choice, bet: float):
             ef.money_transfer(ctx.message.author.id, winnings)
             ef.money_transfer("\"Casino\"", -winnings)
             await ctx.send(f'Rolled a {result}. ' \
-                            'You win {winnings:.2f} dollars!')
+                            f'You win {winnings:.2f} dollars!')
         else:
             ef.ledger_update("Gambling", ctx.guild.id, ctx.message.author.id,
                              "\"Casino\"", bet)
@@ -165,7 +165,7 @@ async def info_error(ctx, error):
 async def balance(ctx):
     balance = ef.check_balance(ctx.message.author.id)
     await ctx.send(f'{ctx.message.author.name} has ' \
-                    '{"{:.2f}".format(round(balance, 2))} dollars.')
+                    f'{"{:.2f}".format(round(balance, 2))} dollars.')
 
 
 # $give
@@ -176,7 +176,7 @@ async def give(ctx, member: discord.Member, amount: float):
         ef.ledger_update("Test", ctx.guild.id, "\"Admin\"", member.id, amount)
         ef.money_transfer(member.id, amount)
         await ctx.send(f'Gave {"{:.2f}".format(round(amount, 2))} ' \
-                        'dollars to {member.name}.')
+                        f'dollars to {member.name}.')
     else:
         await ctx.send(f'You must be a bot admin to do that.')
 
@@ -229,9 +229,9 @@ async def withdraw(ctx, amount: float):
 # $withdraw
 @client.command()
 async def interest_rates(ctx):
-    await ctx.send(f'The deposit rate at the bank is currently ' \
-                    '{bank.deposit_rate * 100}%. The lending rate at ' \
-                    'the bank is currently {bank.lending_rate * 100}%.')
+    await ctx.send('The deposit rate at the bank is currently ' \
+                    f'{bank.deposit_rate * 100}%. The lending rate at ' \
+                    f'the bank is currently {bank.lending_rate * 100}%.')
 
 
 # Bank Proccesses
